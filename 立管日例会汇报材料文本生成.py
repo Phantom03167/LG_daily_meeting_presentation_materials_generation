@@ -32,7 +32,7 @@ def get_format_text(df:pd.DataFrame):
 
     # 前一日完成情况
     # 第一段
-    previous_situation_text += "昨日计划施工6.45公里，实际完成立管{:d}串，完成{:.3g}公里，PMS系统内录入工程量{:.3g}公里。累计完成立管{:d}串，累计完成{:.3g}公里，PMS系统内累计录入工程量{:.3g}公里，累计打眼数{:d}个。\n".format(
+    previous_situation_text += "昨日计划施工6.45公里，实际完成立管{:d}串，完成{}公里，PMS系统内录入工程量{}公里。累计完成立管{:d}串，累计完成{}公里，PMS系统内累计录入工程量{}公里，累计打眼数{:d}个。\n".format(
         df.at['合计', '当日立管串数'],
         round(df.at['合计', '当日实际完成量'] / 1000, 3),
         round(df.at['合计', '当日PMS系统录入量'] / 1000, 3),
@@ -44,7 +44,7 @@ def get_format_text(df:pd.DataFrame):
     # 第二段
     previous_situation_text += "其中，"
     for row in df.loc['小计'].itertuples():
-        previous_situation_text += "{}昨日立管{:d}串，工程量{:.3g}公里，累计立管{:d}串，累计工程量{:.3g}公里；".format(
+        previous_situation_text += "{}昨日立管{:d}串，工程量{}公里，累计立管{:d}串，累计工程量{}公里；".format(
              row.施工队伍 if len(row.施工队伍) >= 4 else row.施工队伍 + '公司',
              row.当日立管串数,
              round(row.当日实际完成量 / 1000, 3),
@@ -56,13 +56,13 @@ def get_format_text(df:pd.DataFrame):
     previous_situation_text += "昨日"
     for row in df.itertuples():
         if not pd.isna(row.序号):
-            previous_situation_text += "{}立管{:d}串、累计完成{:d}串、累计完成{:.3g}公里；".format(
+            previous_situation_text += "{}立管{:d}串、累计完成{:d}串、累计完成{}公里；".format(
                 row.Index,
                 row.当日立管串数,
                 row.累计立管串数,
                 round(row.累计实际完成量 / 1000, 3),
             )
-    previous_situation_text = previous_situation_text[:-1] + "。"
+    previous_situation_text = previous_situation_text[:-1].replace("0.0公里", "0公里") + "。"
 
     # 当日完成情况
     # 表格数据
@@ -71,7 +71,7 @@ def get_format_text(df:pd.DataFrame):
     
     # 第一段
     current_situation_text += "今日计划进场施工人数{:d}人，实际{:d}人，其中罡世公司{:d}人，中石化建{:d}人。".format(
-        df['序号'].count() * 12,
+        (df['序号'].count() - 1) * 12,
         df.at['合计', '施工人数'],
         df.loc[(df.index == '小计') & (df['施工队伍'] == '罡世'), '施工人数'].values[0],
         df.loc[(df.index == '小计') & (df['施工队伍'] == '中石化建'), '施工人数'].values[0],
