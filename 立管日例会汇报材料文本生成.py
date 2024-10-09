@@ -32,7 +32,7 @@ def get_format_text(df:pd.DataFrame):
 
     # 前一日完成情况
     # 第一段
-    previous_situation_text += "昨日计划施工6.45公里，实际完成立管{:d}串，完成{}公里，PMS系统内录入工程量{}公里。累计完成立管{:d}串，累计完成{}公里，PMS系统内累计录入工程量{}公里，累计打眼数{:d}个。\n".format(
+    previous_situation_text += "昨日计划施工4公里，实际完成立管{:d}串，完成{}公里，PMS系统内录入工程量{}公里。累计完成立管{:d}串，累计完成{}公里，PMS系统内累计录入工程量{}公里，累计打眼数{:d}个。\n".format(
         df.at['合计', '当日立管串数'],
         round(df.at['合计', '当日实际完成量'] / 1000, 3),
         round(df.at['合计', '当日PMS系统录入量'] / 1000, 3),
@@ -68,7 +68,6 @@ def get_format_text(df:pd.DataFrame):
     # 表格数据
     number_of_workers = df['施工人数'][(df.index != '小计') & (df.index != '合计') & (df.index != '平昌楼')].to_list()
     number_of_holes = df['累计打眼数量'][(df.index != '小计') & (df.index != '合计') & (df.index != '平昌楼')].to_list()
-    
     # 第一段
     current_situation_text += "今日计划进场施工人数{:d}人，实际{:d}人，其中罡世公司{:d}人，中石化建{:d}人。".format(
         (df['序号'].count() - 1) * 12,
