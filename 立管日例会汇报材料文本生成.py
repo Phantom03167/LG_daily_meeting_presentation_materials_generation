@@ -15,7 +15,7 @@ def load_current_day_data():
     # df = pd.read_excel(r"..\2024年一分公司立管改造日情况统计表.xlsx", sheet_name='9月29日', header=[0, 1], skiprows=1)
     
     # header = ['序号', '开片小区', '施工队伍', '施工人数', '当日打眼数量', '累计打眼数量', '当日立管串数', '累计立管串数', '当日置换串数', '累计置换串数', '当日实际完成量', '累计实际完成量', '当日PMS系统录入量', '累计PMS系统录入量']
-    df.columns = [col[0] if 'Unnamed' in col[1] else col[1]+col[0] for col in df.columns.values]
+    df.columns = [col[0].replace('\n', '') if 'Unnamed' in col[1] else col[1]+col[0] for col in df.columns.values]
     df = df.dropna(subset=['施工人数'])
     df = df.astype({'施工人数': 'int', '当日打眼数量': 'int', '累计打眼数量': 'int', '当日立管串数': 'int', '累计立管串数': 'int'})
     df = df.set_index('开片小区')
@@ -42,7 +42,7 @@ def get_format_text(df:pd.DataFrame):
     )
     # 第二段
     previous_situation_text += "其中，"
-    for row in df.loc['小计'].itertuples():
+    for row in df[(df['管理营业所'].isna())].loc['小计'].itertuples():
         previous_situation_text += "{}昨日立管{:d}串，工程量{}公里，累计立管{:d}串，累计工程量{}公里；".format(
              row.施工队伍 if len(row.施工队伍) >= 4 else row.施工队伍 + '公司',
              row.当日立管串数,
