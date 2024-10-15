@@ -42,7 +42,7 @@ def get_format_text(df:pd.DataFrame):
     )
     # 第二段
     previous_situation_text += "其中，"
-    for row in df[(df['管理营业所'].isna())].loc['小计'].itertuples():
+    for row in df[(df['管理单位'].isna())].loc['小计'].itertuples():
         previous_situation_text += "{}昨日立管{:d}串，工程量{}公里，累计立管{:d}串，累计工程量{}公里；".format(
              row.施工队伍 if len(row.施工队伍) >= 4 else row.施工队伍 + '公司',
              row.当日立管串数,
@@ -52,12 +52,16 @@ def get_format_text(df:pd.DataFrame):
          )
     previous_situation_text = previous_situation_text[:-1].replace("0.0公里", "0公里") + "。\n"
     # 第三段
-    current_situation_text += "今日计划进场施工人数{:d}人，实际{:d}人，其中罡世公司{:d}人，中石化建{:d}人。".format(
+    current_situation_text += "昨日计划进场施工人数{:d}人，实际{:d}人，其中".format(
         (df['序号'].count() - 1) * 12,
         df.at['合计', '施工人数'],
-        df.loc[(df.index == '小计') & (df['施工队伍'] == '罡世'), '施工人数'].values[0],
-        df.loc[(df.index == '小计') & (df['施工队伍'] == '中石化建'), '施工人数'].values[0],
     )
+    for row in df[(df['管理单位'].isna())].loc['小计'].itertuples():
+        current_situation_text += "{}{:d}人，".format(
+            row.施工队伍 if len(row.施工队伍) >= 4 else row.施工队伍 + '公司',
+            row.施工人数,
+        )
+    current_situation_text = current_situation_text[:-1] + "。"
 
     # 输出文本
     # print(previous_situation_text)
