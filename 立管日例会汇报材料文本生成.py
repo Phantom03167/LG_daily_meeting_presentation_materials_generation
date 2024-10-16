@@ -34,11 +34,11 @@ def get_format_text(df:pd.DataFrame):
     # 第一段
     previous_situation_text += "昨日计划施工4公里，实际完成立管{:d}串，完成{}公里，PMS系统内录入工程量{}公里。累计完成立管{:d}串，累计完成{}公里，PMS系统内累计录入工程量{}公里。\n".format(
         df.at['合计', '当日立管串数'],
-        round(df.at['合计', '当日实际完成量'] / 1000, 3),
-        round(df.at['合计', '当日PMS系统录入量'] / 1000, 3),
+        round(df.at['合计', '当日实际完成量'] / 1000, 2),
+        round(df.at['合计', '当日PMS系统录入量'] / 1000, 2),
         df.at['合计', '累计立管串数'],
-        round(df.at['合计', '累计实际完成量'] / 1000, 3),
-        round(df.at['合计', '累计PMS系统录入量'] / 1000, 3),
+        round(df.at['合计', '累计实际完成量'] / 1000, 2),
+        round(df.at['合计', '累计PMS系统录入量'] / 1000, 2),
     )
     # 第二段
     previous_situation_text += "其中，"
@@ -46,9 +46,9 @@ def get_format_text(df:pd.DataFrame):
         previous_situation_text += "{}昨日立管{:d}串，工程量{}公里，累计立管{:d}串，累计工程量{}公里；".format(
              row.施工队伍 if len(row.施工队伍) >= 4 else row.施工队伍 + '公司',
              row.当日立管串数,
-             round(row.当日实际完成量 / 1000, 3),
+             round(row.当日实际完成量 / 1000, 2),
              row.累计立管串数,
-             round(row.累计实际完成量 / 1000, 3),
+             round(row.累计实际完成量 / 1000, 2),
          )
     previous_situation_text = previous_situation_text[:-1].replace("0.0公里", "0公里") + "。\n"
     # 第三段
