@@ -5,7 +5,8 @@ import os, sys
 
 DEFAULT_FILE_PATH = r"..\2024年一分公司立管改造日情况统计表.xlsx"
 RES_TEXT_FILE = os.path.join(os.environ['USERPROFILE'], 'Downloads', '当日汇报材料文本.txt')
-COMPLETED_AREA_COUNT = 12
+COMPLETED_AREA_COUNT = 38
+PAUSE_AREA_COUNT = 0
 
 def load_current_day_data():
     # 获取当前日期
@@ -26,8 +27,8 @@ def load_current_day_data():
     
 
 def get_format_text(df:pd.DataFrame):
-    previous_situation_text = ""
-    current_situation_text = ""
+    previous_situation_text = str()
+    current_situation_text = str()
     number_of_workers = []
     number_of_holes = []
 
@@ -50,7 +51,7 @@ def get_format_text(df:pd.DataFrame):
             round(row.PMS录入率, 4),
             round(row.立管置换率, 4),
         )
-        # 昨日施工队工程量
+    # 昨日施工队工程量
     previous_situation_text += "其中，"
     for row in df[(df['施工队伍'].notnull())].loc['小计'].itertuples():
         if row.当日立管串数:
@@ -67,10 +68,12 @@ def get_format_text(df:pd.DataFrame):
                 row.累计立管串数,
                 round(row.累计实际完成量 / 1000, 2),
             )
+    # 后期处理
     previous_situation_text = previous_situation_text[:-1].replace("0.0公里", "0公里") + "。\n"
+    previous_situation_text = previous_situation_text.replace("实际完成立管0串，完成0公里", "实际无工程量")
     # 今日施工人数
     current_situation_text += "今日计划进场施工人数{:d}人，实际{:d}人，其中".format(
-        (df['序号'].count() - COMPLETED_AREA_COUNT) * 12,
+        (df['序号'].count() - COMPLETED_AREA_COUNT - PAUSE_AREA_COUNT) * 12,
         df.at['合计', '施工人数'].sum(),
     )
     for row in df[(df['施工队伍'].notnull())].loc['小计'].itertuples():
