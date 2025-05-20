@@ -19,7 +19,7 @@ REMINDER_DAYS = (FHY_END_DATE - TODAY_DATE).days + 1     # 2025年立管改造�
 REDUCTION_FACTOR = 0.85     # 2025年立管改造任务时间缩减系数
 INTERVAL_DAYS = 1 if TODAY_DATE.weekday() != 0 else 3     # 2025年立管改造任务剩余天数
 
-def load_specific_day_data(date:date = TODAY_DATE) -> tuple[pd.DataFrame, pd.DataFrame]:
+def load_specific_day_data(date:datetime = TODAY_DATE) -> tuple[pd.DataFrame, pd.DataFrame]:
     # 获取当前日期
     # TODAY_DATE = date.today().replace(day=17)
     current_date = date.strftime(r"%#m月%#d日")
@@ -222,11 +222,32 @@ if __name__ == "__main__":
     interval_days = 1
     if interval_days:
         INTERVAL_DAYS = int(interval_days)
-    days = input("请输入需要生成文本的日期（默认今天{}）：".format(TODAY_DATE.strftime(r"%#m.%#d"))).split(' ')
-    if not days[0]:
+        
+    # 获取需要生成文本的日期
+    try:
+        days = input("请输入需要生成文本的日期（默认今天{}）：".format(TODAY_DATE.strftime(r"%#m.%#d")))
+        if not days:
+            days = [TODAY_DATE.strftime(r"%#m.%#d")]
+        else:
+            days = days.split(' ')
+        days = [datetime.strptime(d, r"%m.%d").strftime(r"%#m月%#d日") for d in days]
+    except:
         days = [TODAY_DATE.strftime(r"%#m.%#d")]
-    days = [datetime.strptime(d, r"%m.%d").strftime(r"%#m月%#d日") for d in days]
+    # 获取工期缩减系数
+    try:
+        reduction_factor = input("请输入工期缩减系数（默认{}）：".format(REDUCTION_FACTOR))
+        reduction_factor = float(reduction_factor)
+        if reduction_factor > 0 and reduction_factor < 1:
+            REDUCTION_FACTOR = reduction_factor
+    except:
+        pass
+    
     for day in days:
         print(day)
-        current_day_data, previous_day_data = load_specific_day_data()
-        get_format_text(current_day_data, previous_day_data, day)
+        try:
+            current_day_data, previous_day_data = load_specific_day_data(datetime.strptime(day, r"%m月%d日"))
+            get_format_text(current_day_data, previous_day_data, day)
+        except Exception as e:
+            print("没有找到{}工作表".format(day))
+            print(e.with_traceback())
+            continue
