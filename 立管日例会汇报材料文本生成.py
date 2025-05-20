@@ -1,5 +1,5 @@
-from datetime import datetime
 from datetime import date
+from datetime import datetime
 from datetime import timedelta
 
 import math
@@ -7,25 +7,23 @@ import pandas as pd
 import os, sys
 
 DEFAULT_FILE_PATH = r"..\2025年一分公司立管改造日情况统计表.xlsx"     # 日统计表文件名
-RES_TEXT_FILE = os.path.join(os.environ['USERPROFILE'], 'Downloads', '当日汇报材料文本.txt')
+RES_TEXT_PATH = os.path.join(os.environ['USERPROFILE'], 'Downloads')
 COMPLETED_AREA_COUNT = 38     # 完工小区数量
 PAUSE_AREA_COUNT = 0     # 停工小区数量
 Global_Digital_Precision = 2     # 全局数字精度
 Global_Percentage_Precision = Global_Digital_Precision + 2     # 全局百分比精度
 
 FHY_END_DATE = date(2025, 6, 30)     # 2025年立管改造任务上半年结束日期
-TODAY_DATE = datetime.today().date()    # 当前日期
+TODAY_DATE = date.today()    # 当前日期
 REMINDER_DAYS = (FHY_END_DATE - TODAY_DATE).days + 1     # 2025年立管改造任务剩余天数
 REDUCTION_FACTOR = 0.85     # 2025年立管改造任务时间缩减系数
 INTERVAL_DAYS = 1 if TODAY_DATE.weekday() != 0 else 3     # 2025年立管改造任务剩余天数
 
-def load_current_day_data():
+def load_specific_day_data(date:date = TODAY_DATE) -> tuple[pd.DataFrame, pd.DataFrame]:
     # 获取当前日期
-    # TODAY_DATE = datetime.now().date().replace(day=23)
-    current_date = TODAY_DATE.strftime("%#m月%#d日")
-    previous_date = (TODAY_DATE - timedelta(days=INTERVAL_DAYS)).strftime("%#m月%#d日")
-    print(current_date)
-    print(previous_date)
+    # TODAY_DATE = date.today().replace(day=17)
+    current_date = date.strftime(r"%#m月%#d日")
+    previous_date = (date - timedelta(days=INTERVAL_DAYS)).strftime(r"%#m月%#d日")
     
     current_date_df = pd.read_excel(DEFAULT_FILE_PATH, sheet_name=current_date, header=[0,], skiprows=1)
     previous_date_df = pd.read_excel(DEFAULT_FILE_PATH, sheet_name=previous_date, header=[0,], skiprows=1)
@@ -45,12 +43,10 @@ def dateframe_preprocessing(df:pd.DataFrame) -> pd.DataFrame:
     # print(df.index)
     return df
 
-def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame):
+def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, date:str):
+    global TODAY_DATE
     previous_situation_text = str()
     current_situation_text = str()
-    comtent = []
-    number_of_workers = []
-    number_of_holes = []
 
     # 进度概况
     # 昨日施工总体情况
@@ -58,7 +54,7 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame):
     prow = pdate_df.loc['总计']
     previous_situation_text += (
         "一分公司" +
-        "，{}".format("前{}日".format(INTERVAL_DAYS) if INTERVAL_DAYS > 1 else "昨日") + 
+        "{}".format((TODAY_DATE - timedelta(days=1)).strftime(r"%#m月%#d日")) + 
         "计划完成{}公里".format(round((crow.上半年计划工程量 - prow.累计实际完成量) / math.ceil((REMINDER_DAYS + INTERVAL_DAYS) * REDUCTION_FACTOR) / 1000 * INTERVAL_DAYS, Global_Digital_Precision)) +
         "，实际" +
         # "完成立管{:d}串，".format(crow.累计立管串数 - prow.累计立管串数) +
@@ -69,7 +65,9 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame):
         # "，PMS系统内累计录入工程量{}公里".format(round(crow.累计PMS系统录入量 / 1000, Global_Digital_Precision)) +
         "。" +
         "其中，" +
-        "民心工程昨日完成{}公里，".format(round((cdate_df.loc["总计"].民心工程累计完成量 - pdate_df.loc["总计"].民心工程累计完成量) / 1000, Global_Digital_Precision)) +
+        "民心工程" +
+        "{}".format((TODAY_DATE - timedelta(days=1)).strftime(r"%#m月%#d日")) +
+        "完成{}公里，".format(round((cdate_df.loc["总计"].民心工程累计完成量 - pdate_df.loc["总计"].民心工程累计完成量) / 1000, Global_Digital_Precision)) +
         "累计完成{}公里".format(round(cdate_df.loc["总计"].民心工程累计完成量 / 1000, Global_Digital_Precision)) +
         "。" +
         "按2025年立管改造上半年任务量{}公里计算".format(round(crow.上半年计划工程量 / 1000, Global_Digital_Precision)) +
@@ -82,7 +80,7 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame):
         # "当前PMS系统录入率为{:.2%}".format(round(crow.PMS录入率, Global_Percentage_Precision)) +
         # "，立管置换率为{:.2%}".format(round(crow.立管置换率, Global_Percentage_Precision)) +
         # "。" +
-        "距上半年立管改造任务截止时间（{}）还剩{:d}天".format(FHY_END_DATE.strftime("%Y年%#m月%#d日"), REMINDER_DAYS) +
+        "距上半年立管改造任务截止时间（{}）还剩{:d}天".format(FHY_END_DATE.strftime(r"%Y年%#m月%#d日"), REMINDER_DAYS) +
         "，按{:d}天计算倒排工期".format(math.ceil(REMINDER_DAYS * REDUCTION_FACTOR)) +
         "，每天需完成{}公里".format(round((crow.上半年计划工程量 - crow.累计实际完成量) / math.ceil(REMINDER_DAYS * REDUCTION_FACTOR) / 1000, Global_Digital_Precision)) +
         "。\n"
@@ -91,7 +89,7 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame):
         prow = pdate_df.loc['合计'].query('管理单位 == @crow.管理单位').iloc[0]
         previous_situation_text += (
             "{}区域".format(crow.管理单位) + 
-            "，{}".format("前{}日".format(INTERVAL_DAYS) if INTERVAL_DAYS > 1 else "昨日") + 
+            "{}".format((TODAY_DATE - timedelta(days=1)).strftime(r"%#m月%#d日")) +
             "计划完成{}公里".format(round((crow.上半年计划工程量 - prow.累计实际完成量) / math.ceil((REMINDER_DAYS + INTERVAL_DAYS) * REDUCTION_FACTOR) / 1000 * INTERVAL_DAYS, Global_Digital_Precision)) +
             # "，实际完成立管{:d}串".format(crow.累计立管串数 - prow.累计立管串数) +
             "，实际完成{}公里".format(round((crow.累计实际完成量 - prow.累计实际完成量) / 1000, Global_Digital_Precision)) +
@@ -101,7 +99,9 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame):
             # "，PMS系统内累计录入工程量{}公里".format(round(crow.累计PMS系统录入量 / 1000, Global_Digital_Precision)) +
             "。" +
             "其中，" +
-            "民心工程昨日完成{}公里，".format(round((crow.民心工程累计完成量 - prow.民心工程累计完成量) / 1000, Global_Digital_Precision)) +
+            "民心工程" +
+            "{}".format((TODAY_DATE - timedelta(days=1)).strftime(r"%#m月%#d日")) +
+            "完成{}公里，".format(round((crow.民心工程累计完成量 - prow.民心工程累计完成量) / 1000, Global_Digital_Precision)) +
             "累计完成{}公里".format(round(crow.民心工程累计完成量 / 1000, Global_Digital_Precision)) +
             "。"
         )
@@ -129,7 +129,8 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame):
         prow = pdate_df[(pdate_df['施工队伍'].notnull())].loc['小计'].query('施工队伍 == @crow.施工队伍').iloc[0]
         previous_situation_text += (
             "{}".format(crow.施工队伍 if len(crow.施工队伍) >= 4 else crow.施工队伍 + '公司') +
-            "昨日上岗{}人".format(crow.施工人数)
+            "{}".format((TODAY_DATE - timedelta(days=1)).strftime(r"%#m月%#d日")) +
+            "上岗{}人".format(crow.施工人数)
         )
         if (crow.累计立管串数 - prow.累计立管串数) or (crow.累计实际完成量 - prow.累计实际完成量):
             previous_situation_text += (
@@ -201,28 +202,14 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame):
     previous_situation_text = previous_situation_text.replace("0.0公里", "0公里")
     previous_situation_text = previous_situation_text.replace("实际完成立管0串，完成0公里", "实际无工程量")
     previous_situation_text = previous_situation_text.replace("完成0公里", "实际无工程量")
-    # if INTERVAL_DAYS > 1:
-    #     previous_situation_text = previous_situation_text.replace("昨日", "前{}日".format(INTERVAL_DAYS))
     
-    # 今日施工人数
-    # current_situation_text += \
-    # "今日" + \
-    # "计划进场施工人数{:d}人".format((df['序号'].count() - COMPLETED_AREA_COUNT - PAUSE_AREA_COUNT) * 12) + \
-    # "，实际{:d}人".format(df.at['合计', '施工人数'].sum()) + \
-    # "，其中"
-    # for row in df[(df['施工队伍'].notnull())].loc['小计'].itertuples():
-    #     current_situation_text += "{}{:d}人，".format(
-    #         row.施工队伍 if len(crow.施工队伍) >= 4 else row.施工队伍 + '公司',
-    #         row.施工人数,
-    #     )
-    # current_situation_text = current_situation_text[:-1] + "。"
-
     # 输出文本
     # print(previous_situation_text)
     # print(current_situation_text)
     
     # 写入文件
-    with open(RES_TEXT_FILE, 'w', encoding='utf-8') as f:
+    date = date.replace("月", ".").replace("日", "")
+    with open(os.path.join(RES_TEXT_PATH, '{}汇报材料文本.txt'.format(date)), 'w', encoding='utf-8') as f:
         f.write(previous_situation_text)
         f.write(current_situation_text)
 
@@ -231,8 +218,15 @@ if __name__ == "__main__":
     # os.chdir(sys.path[0])
     if len(sys.argv) > 1:
         DEFAULT_FILE_PATH = sys.argv[1]
-    interval_days = input("请输入间隔天数（默认{}天）：".format(INTERVAL_DAYS))
+    # interval_days = input("请输入间隔天数（默认{}天）：".format(INTERVAL_DAYS))
+    interval_days = 1
     if interval_days:
         INTERVAL_DAYS = int(interval_days)
-    current_day_data, previous_day_data = load_current_day_data()
-    get_format_text(current_day_data, previous_day_data)
+    days = input("请输入需要生成文本的日期（默认今天{}）：".format(TODAY_DATE.strftime(r"%#m.%#d"))).split(' ')
+    if not days[0]:
+        days = [TODAY_DATE.strftime(r"%#m.%#d")]
+    days = [datetime.strptime(d, r"%m.%d").strftime(r"%#m月%#d日") for d in days]
+    for day in days:
+        print(day)
+        current_day_data, previous_day_data = load_specific_day_data()
+        get_format_text(current_day_data, previous_day_data, day)
