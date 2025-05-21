@@ -7,6 +7,7 @@ import pandas as pd
 import os, sys
 
 DEFAULT_FILE_PATH = r"..\2025年一分公司立管改造日情况统计表.xlsx"     # 日统计表文件名
+Y24_FILE_PATH = r"..\2024年一分公司立管改造日情况统计表.xlsx"
 RES_TEXT_PATH = os.path.join(os.environ['USERPROFILE'], 'Downloads')
 COMPLETED_AREA_COUNT = 38     # 完工小区数量
 PAUSE_AREA_COUNT = 0     # 停工小区数量
@@ -27,23 +28,27 @@ def load_specific_day_data(date:datetime = TODAY_DATE) -> tuple[pd.DataFrame, pd
     
     current_date_df = pd.read_excel(DEFAULT_FILE_PATH, sheet_name=current_date, header=[0,], skiprows=1)
     previous_date_df = pd.read_excel(DEFAULT_FILE_PATH, sheet_name=previous_date, header=[0,], skiprows=1)
+    y24_date_df = pd.read_excel(Y24_FILE_PATH, sheet_name=current_date, header=[0, 1], skiprows=1)
     # df = pd.read_excel(DEFAULT_FILE_PATH, sheet_name='9月29日', header=[0, 1], skiprows=1)
 
     current_date_df = dateframe_preprocessing(current_date_df)
     previous_date_df = dateframe_preprocessing(previous_date_df)
-    return current_date_df, previous_date_df
+    y24_date_df = dateframe_preprocessing(y24_date_df, True)
+    return current_date_df, previous_date_df, y24_date_df
 
-def dateframe_preprocessing(df:pd.DataFrame) -> pd.DataFrame:
+def dateframe_preprocessing(df:pd.DataFrame, multi_header: bool = False) -> pd.DataFrame:
     # header = ['序号', '开片小区', '施工队伍', '施工人数', '当日打眼数量', '累计打眼数量', '当日立管串数', '累计立管串数', '当日置换串数', '累计置换串数', '当日实际完成量', '累计实际完成量', '当日PMS系统录入量', '累计PMS系统录入量']
-    # df.columns = [col[0].replace('\n', '') if 'Unnamed' in col[1] else col[1]+col[0] for col in df.columns.values]
-    df.columns = [col.replace('\n', '') for col in df.columns.values]
+    if multi_header:
+        df.columns = [col[0].replace('\n', '') if 'Unnamed' in col[1] else col[1]+col[0] for col in df.columns.values]
+    else:
+        df.columns = [col.replace('\n', '') for col in df.columns.values]
     df = df.dropna(subset=['施工人数', '当日打眼数量', '当日立管串数', '当日实际完成量'])
-    df = df.astype({'施工人数': 'int', '当日打眼数量': 'int', '累计打眼数量': 'int', '当日立管串数': 'int', '累计立管串数': 'int'})
+    df = df.astype({'施工人数': 'int', '当日打眼数量': 'int', '累计打眼数量': 'int', '当日立管串数': 'int', '累计立管串数': 'int', '当日置换串数': 'int', '累计置换串数': 'int'})
     df = df.set_index('开片小区')
     # print(df.index)
     return df
 
-def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, date:str):
+def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, y24data_df:pd.DataFrame, date:str):
     global TODAY_DATE
     previous_situation_text = str()
     current_situation_text = str()
@@ -198,20 +203,55 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, date:str):
         )
     
     # 后期处理
-    previous_situation_text = previous_situation_text[:-1]
+    previous_situation_text += "\n"
     previous_situation_text = previous_situation_text.replace("0.0公里", "0公里")
     previous_situation_text = previous_situation_text.replace("实际完成立管0串，完成0公里", "实际无工程量")
     previous_situation_text = previous_situation_text.replace("完成0公里", "实际无工程量")
     
+    # 置换情况
+    y24data_df = y24data_df[(y24data_df['当日置换串数'] != 0)]
+    cdate_df = cdate_df[(cdate_df['当日置换串数'] != 0)]
+    replacement_situation_text = ""
+    
+    replacement_situation_text += (
+        "24年改造小区{}".format(date) +
+        "置换{}串".format(y24data_df.loc['合计'].当日置换串数.sum()) +
+        "，累计置换{}（+178={}）串。".format(y24data_df.loc['合计'].累计置换串数.sum() - 178, y24data_df.loc['合计'].累计置换串数.sum())
+    )
+    replacement_situation_text += "其中，"
+    for row in y24data_df[(y24data_df['监理单位'].notnull())].itertuples():
+        replacement_situation_text += (
+            "{}".format(row.Index) +
+            "置换{}串".format(row.当日置换串数) +
+            "，"
+        )
+    replacement_situation_text = replacement_situation_text[:-1] + "。\n"
+    
+    replacement_situation_text += (
+        "25年改造小区{}".format(date) +
+        "置换{}串".format(cdate_df.loc['总计'].当日置换串数.sum()) +
+        "，累计置换{}串。".format(cdate_df.loc['总计'].累计置换串数.sum())
+    )
+    replacement_situation_text += "其中，"
+    for row in cdate_df[(cdate_df['监理单位'].notnull())].itertuples():
+        replacement_situation_text += (
+            "{}".format(row.Index) +
+            "置换{}串".format(row.当日置换串数) +
+            "，"
+        )
+    replacement_situation_text = replacement_situation_text[:-1] + "。\n"
+    
     # 输出文本
     # print(previous_situation_text)
     # print(current_situation_text)
+    # print(replacement_situation_text)
     
     # 写入文件
     date = date.replace("月", ".").replace("日", "")
     with open(os.path.join(RES_TEXT_PATH, '{}汇报材料文本.txt'.format(date)), 'w', encoding='utf-8') as f:
         f.write(previous_situation_text)
         f.write(current_situation_text)
+        f.write(replacement_situation_text)
 
 
 if __name__ == "__main__":
@@ -245,8 +285,8 @@ if __name__ == "__main__":
     for day in days:
         print(day)
         try:
-            current_day_data, previous_day_data = load_specific_day_data(datetime.strptime(day, r"%m月%d日"))
-            get_format_text(current_day_data, previous_day_data, day)
+            current_day_data, previous_day_data, y24_day_data = load_specific_day_data(datetime.strptime(day, r"%m月%d日"))
+            get_format_text(current_day_data, previous_day_data, y24_day_data, day)
         except Exception as e:
             print("没有找到{}工作表".format(day))
             print(e.with_traceback())
