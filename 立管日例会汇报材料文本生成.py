@@ -209,37 +209,47 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, y24data_df:pd.
     previous_situation_text = previous_situation_text.replace("完成0公里", "实际无工程量")
     
     # 置换情况
-    y24data_df = y24data_df[(y24data_df['当日置换串数'] != 0)]
-    cdate_df = cdate_df[(cdate_df['当日置换串数'] != 0)]
+    y24data_df = y24data_df[(y24data_df['累计置换串数'] != 0)]
+    cdate_df = cdate_df[(cdate_df['累计置换串数'] != 0)]
     replacement_situation_text = ""
     
-    replacement_situation_text += (
-        "24年改造小区{}".format(date) +
-        "置换{}串".format(y24data_df.loc['合计'].当日置换串数.sum()) +
-        "，累计置换{}（+178={}）串。".format(y24data_df.loc['合计'].累计置换串数.sum() - 178, y24data_df.loc['合计'].累计置换串数.sum())
-    )
-    replacement_situation_text += "其中，"
-    for row in y24data_df[(y24data_df['监理单位'].notnull())].itertuples():
+    if not y24data_df.empty:
         replacement_situation_text += (
-            "{}".format(row.Index) +
-            "置换{}串".format(row.当日置换串数) +
-            "，"
+            "24年改造小区{}".format(date) +
+            "置换{}串".format(y24data_df.loc['合计'].当日置换串数.sum()) +
+            "，累计置换{}（+178={}）串。".format(y24data_df.loc['合计'].累计置换串数.sum() - 178, y24data_df.loc['合计'].累计置换串数.sum())
         )
-    replacement_situation_text = replacement_situation_text[:-1] + "。\n"
+        
+        if not y24data_df.loc['合计'].当日置换串数.sum() == 0:
+            replacement_situation_text += "其中，"
+            for row in y24data_df[(y24data_df['监理单位'].notnull())].itertuples():
+                if not row.当日置换串数:
+                    continue
+                replacement_situation_text += (
+                    "{}".format(row.Index) +
+                    "置换{}串".format(row.当日置换串数) +
+                    "，"
+                )
+        replacement_situation_text = replacement_situation_text[:-1] + "。\n"
     
-    replacement_situation_text += (
-        "25年改造小区{}".format(date) +
-        "置换{}串".format(cdate_df.loc['总计'].当日置换串数.sum()) +
-        "，累计置换{}串。".format(cdate_df.loc['总计'].累计置换串数.sum())
-    )
-    replacement_situation_text += "其中，"
-    for row in cdate_df[(cdate_df['监理单位'].notnull())].itertuples():
+    if not cdate_df.empty:
         replacement_situation_text += (
-            "{}".format(row.Index) +
-            "置换{}串".format(row.当日置换串数) +
-            "，"
+            "25年改造小区{}".format(date) +
+            "置换{}串".format(cdate_df.loc['总计'].当日置换串数.sum()) +
+            "，累计置换{}串。".format(cdate_df.loc['总计'].累计置换串数.sum())
         )
-    replacement_situation_text = replacement_situation_text[:-1] + "。\n"
+        
+        if not cdate_df.loc['总计'].当日置换串数.sum() == 0:
+            replacement_situation_text += "其中，"
+            for row in cdate_df[(cdate_df['监理单位'].notnull())].itertuples():
+                if not row.当日置换串数:
+                    continue
+                replacement_situation_text += (
+                    "{}".format(row.Index) +
+                    "置换{}串".format(row.当日置换串数) +
+                    "，"
+                )
+        replacement_situation_text = replacement_situation_text[:-1] + "。\n"
     
     # 输出文本
     # print(previous_situation_text)
@@ -255,7 +265,7 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, y24data_df:pd.
 
 
 if __name__ == "__main__":
-    # os.chdir(sys.path[0])
+    os.chdir(sys.path[0])
     if len(sys.argv) > 1:
         DEFAULT_FILE_PATH = sys.argv[1]
     # interval_days = input("请输入间隔天数（默认{}天）：".format(INTERVAL_DAYS))
@@ -267,12 +277,12 @@ if __name__ == "__main__":
     try:
         days = input("请输入需要生成文本的日期（默认今天{}）：".format(TODAY_DATE.strftime(r"%#m.%#d")))
         if not days:
-            days = [TODAY_DATE.strftime(r"%#m.%#d")]
+            days = [TODAY_DATE.strftime(r"%#m月%#d日")]
         else:
             days = days.split(' ')
         days = [datetime.strptime(d, r"%m.%d").strftime(r"%#m月%#d日") for d in days]
     except:
-        days = [TODAY_DATE.strftime(r"%#m.%#d")]
+        days = [TODAY_DATE.strftime(r"%#m月%#d日")]
     # 获取工期缩减系数
     try:
         reduction_factor = input("请输入工期缩减系数（默认{}）：".format(REDUCTION_FACTOR))
