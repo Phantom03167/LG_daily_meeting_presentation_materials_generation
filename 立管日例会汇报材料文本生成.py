@@ -24,10 +24,18 @@ def load_specific_day_data(date:datetime = TODAY_DATE) -> tuple[pd.DataFrame, pd
     # 获取当前日期
     # TODAY_DATE = date.today().replace(day=17)
     current_date = date.strftime(r"%#m月%#d日")
-    previous_date = (date - timedelta(days=INTERVAL_DAYS)).strftime(r"%#m月%#d日")
-    
     current_date_df = pd.read_excel(DEFAULT_FILE_PATH, sheet_name=current_date, header=[0,], skiprows=1)
-    previous_date_df = pd.read_excel(DEFAULT_FILE_PATH, sheet_name=previous_date, header=[0,], skiprows=1)
+
+    interval_days = INTERVAL_DAYS
+    while True:
+        try:
+            previous_date = (date - timedelta(days=interval_days)).strftime(r"%#m月%#d日")    
+            previous_date_df = pd.read_excel(DEFAULT_FILE_PATH, sheet_name=previous_date, header=[0,], skiprows=1)
+            break
+        except:
+            interval_days += 1
+            continue
+
     y24_date_df = pd.read_excel(Y24_FILE_PATH, sheet_name=current_date, header=[0, 1], skiprows=1)
     # df = pd.read_excel(DEFAULT_FILE_PATH, sheet_name='9月29日', header=[0, 1], skiprows=1)
 
@@ -59,7 +67,7 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, y24data_df:pd.
     prow = pdate_df.loc['总计']
     previous_situation_text += (
         "一分公司" +
-        "{}".format((TODAY_DATE - timedelta(days=1)).strftime(r"%#m月%#d日")) + 
+        "{}".format(date) + 
         "计划完成{}公里".format(round((crow.上半年计划工程量 - prow.累计实际完成量) / math.ceil((REMINDER_DAYS + INTERVAL_DAYS) * REDUCTION_FACTOR) / 1000 * INTERVAL_DAYS, Global_Digital_Precision)) +
         "，实际" +
         # "完成立管{:d}串，".format(crow.累计立管串数 - prow.累计立管串数) +
@@ -71,7 +79,7 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, y24data_df:pd.
         "。" +
         "其中，" +
         "民心工程" +
-        "{}".format((TODAY_DATE - timedelta(days=1)).strftime(r"%#m月%#d日")) +
+        "{}".format(date) +
         "完成{}公里，".format(round((cdate_df.loc["总计"].民心工程累计完成量 - pdate_df.loc["总计"].民心工程累计完成量) / 1000, Global_Digital_Precision)) +
         "累计完成{}公里".format(round(cdate_df.loc["总计"].民心工程累计完成量 / 1000, Global_Digital_Precision)) +
         "。" +
@@ -94,7 +102,7 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, y24data_df:pd.
         prow = pdate_df.loc['合计'].query('管理单位 == @crow.管理单位').iloc[0]
         previous_situation_text += (
             "{}区域".format(crow.管理单位) + 
-            "{}".format((TODAY_DATE - timedelta(days=1)).strftime(r"%#m月%#d日")) +
+            "{}".format(date) +
             "计划完成{}公里".format(round((crow.上半年计划工程量 - prow.累计实际完成量) / math.ceil((REMINDER_DAYS + INTERVAL_DAYS) * REDUCTION_FACTOR) / 1000 * INTERVAL_DAYS, Global_Digital_Precision)) +
             # "，实际完成立管{:d}串".format(crow.累计立管串数 - prow.累计立管串数) +
             "，实际完成{}公里".format(round((crow.累计实际完成量 - prow.累计实际完成量) / 1000, Global_Digital_Precision)) +
@@ -105,7 +113,7 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, y24data_df:pd.
             "。" +
             "其中，" +
             "民心工程" +
-            "{}".format((TODAY_DATE - timedelta(days=1)).strftime(r"%#m月%#d日")) +
+            "{}".format(date) +
             "完成{}公里，".format(round((crow.民心工程累计完成量 - prow.民心工程累计完成量) / 1000, Global_Digital_Precision)) +
             "累计完成{}公里".format(round(crow.民心工程累计完成量 / 1000, Global_Digital_Precision)) +
             "。"
@@ -134,7 +142,7 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, y24data_df:pd.
         prow = pdate_df[(pdate_df['施工队伍'].notnull())].loc['小计'].query('施工队伍 == @crow.施工队伍').iloc[0]
         previous_situation_text += (
             "{}".format(crow.施工队伍 if len(crow.施工队伍) >= 4 else crow.施工队伍 + '公司') +
-            "{}".format((TODAY_DATE - timedelta(days=1)).strftime(r"%#m月%#d日")) +
+            "{}".format(date) +
             "上岗{}人".format(crow.施工人数)
         )
         if (crow.累计立管串数 - prow.累计立管串数) or (crow.累计实际完成量 - prow.累计实际完成量):
