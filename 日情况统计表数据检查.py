@@ -9,6 +9,8 @@ def check_data(current_day_data: pd.DataFrame, previous_day_data: pd.DataFrame) 
     """
     checked_items = ["累计打眼数量", "累计立管串数", "累计置换串数", "累计实际完成量", "累计PMS系统录入量"]
     checked_results = dict()
+    current_day_data.replace(pd.NA, '', inplace=True)
+    previous_day_data.replace(pd.NA, '', inplace=True)
     
     for crow in current_day_data.iterrows():
         crow = crow[1]
@@ -53,8 +55,8 @@ def check_data(current_day_data: pd.DataFrame, previous_day_data: pd.DataFrame) 
                 checked_results[row_name].append("有立管但当日完成量为0")
             if crow["累计立管串数"] != 0 and crow["累计打眼数量"] == 0:
                 checked_results[row_name].append("有立管但累计打眼数为0")
-            if crow["累计置换串数"] != 0 and crow["累计立管串数"] == 0:
-                checked_results[row_name].append("有置换串但累计立管为0")
+            # if crow["累计置换串数"] != 0 and crow["累计立管串数"] == 0:
+            #     checked_results[row_name].append("有置换串但累计立管为0")
             if crow["当日打眼数量"] == 0 and crow["当日立管串数"] == 0 and crow["当日实际完成量"] == 0 and crow["当日置换串数"] == 0 and crow["施工人数"] != 0:
                 checked_results[row_name].append("无工作量但施工人数不为0")
             if (crow["当日打眼数量"] != 0 or crow["当日立管串数"] != 0 or crow["当日实际完成量"] != 0 or crow["当日置换串数"] != 0) and crow["施工人数"] == 0:
@@ -62,7 +64,7 @@ def check_data(current_day_data: pd.DataFrame, previous_day_data: pd.DataFrame) 
             
             # 检查施工状态
             if (crow["施工人数"] == 0 and crow["施工状态"] not in ("停工", "待置换", "完工")) or \
-            (crow["施工人数"] != 0 and crow["施工状态"] in ("在施")):
+            (crow["施工人数"] != 0 and crow["施工状态"] not in ("在施")):
                 checked_results[row_name].append("施工状态错误")
         
     # 输出检查结果
@@ -93,7 +95,7 @@ if __name__ == "__main__":
     for day in days:
         print(day)
         try:
-            current_day_data, previous_day_data, _ = load_specific_day_data(datetime.strptime(day, r"%m月%d日"))
+            current_day_data, previous_day_data, _ = load_specific_day_data(datetime.strptime(day, r"%m月%d日"), False)
             check_data(current_day_data, previous_day_data)
         except ValueError:
             print("没有找到{}工作表".format(day))

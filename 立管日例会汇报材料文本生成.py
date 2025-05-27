@@ -262,8 +262,10 @@ if __name__ == "__main__":
         print(day)
         try:
             current_day_data, previous_day_data, y24_day_data = load_specific_day_data(datetime.strptime(day, r"%m月%d日"))
-            get_format_text(current_day_data, previous_day_data, y24_day_data, day)
         except ValueError:
             print("没有找到{}工作表".format(day))
+            # traceback.print_exc()
         except Exception:
             traceback.print_exc()
+        
+        get_format_text(current_day_data, previous_day_data, y24_day_data, day)
