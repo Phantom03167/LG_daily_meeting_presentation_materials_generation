@@ -100,7 +100,9 @@ if __name__ == "__main__":
         except ValueError:
             print("没有找到{}工作表".format(day))
             # traceback.print_exc()
+            exit(1)
         except Exception:
             traceback.print_exc()
-            print("检查{}数据时发生错误".format(day))            
+            print("检查{}数据时发生错误".format(day))
+            exit(2)
         print("=" * 100)
