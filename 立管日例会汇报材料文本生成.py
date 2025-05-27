@@ -1,13 +1,8 @@
-from datetime import date
-from datetime import datetime
-from datetime import timedelta
+from LoadExcel import *
 
 import math
-import pandas as pd
-import os, sys
+import os, sys, traceback
 
-DEFAULT_FILE_PATH = r"..\2025年一分公司立管改造日情况统计表.xlsx"     # 日统计表文件名
-Y24_FILE_PATH = r"..\2024年一分公司立管改造日情况统计表.xlsx"
 RES_TEXT_PATH = os.path.join(os.environ['USERPROFILE'], 'Downloads')
 COMPLETED_AREA_COUNT = 38     # 完工小区数量
 PAUSE_AREA_COUNT = 0     # 停工小区数量
@@ -15,49 +10,13 @@ Global_Digital_Precision = 2     # 全局数字精度
 Global_Percentage_Precision = Global_Digital_Precision + 2     # 全局百分比精度
 
 FHY_END_DATE = date(2025, 6, 30)     # 2025年立管改造任务上半年结束日期
-TODAY_DATE = date.today()    # 当前日期
 REMINDER_DAYS = (FHY_END_DATE - TODAY_DATE).days + 1     # 2025年立管改造任务剩余天数
 REDUCTION_FACTOR = 0.85     # 2025年立管改造任务时间缩减系数
-INTERVAL_DAYS = 1 if TODAY_DATE.weekday() != 0 else 3     # 2025年立管改造任务剩余天数
 
-def load_specific_day_data(date:datetime = TODAY_DATE) -> tuple[pd.DataFrame, pd.DataFrame]:
-    # 获取当前日期
-    # TODAY_DATE = date.today().replace(day=17)
-    current_date = date.strftime(r"%#m月%#d日")
-    current_date_df = pd.read_excel(DEFAULT_FILE_PATH, sheet_name=current_date, header=[0,], skiprows=1)
-
-    interval_days = INTERVAL_DAYS
-    while True:
-        try:
-            previous_date = (date - timedelta(days=interval_days)).strftime(r"%#m月%#d日")    
-            previous_date_df = pd.read_excel(DEFAULT_FILE_PATH, sheet_name=previous_date, header=[0,], skiprows=1)
-            break
-        except:
-            interval_days += 1
-            continue
-
-    y24_date_df = pd.read_excel(Y24_FILE_PATH, sheet_name=current_date, header=[0, 1], skiprows=1)
-    # df = pd.read_excel(DEFAULT_FILE_PATH, sheet_name='9月29日', header=[0, 1], skiprows=1)
-
-    current_date_df = dateframe_preprocessing(current_date_df)
-    previous_date_df = dateframe_preprocessing(previous_date_df)
-    y24_date_df = dateframe_preprocessing(y24_date_df, True)
-    return current_date_df, previous_date_df, y24_date_df
-
-def dateframe_preprocessing(df:pd.DataFrame, multi_header: bool = False) -> pd.DataFrame:
-    # header = ['序号', '开片小区', '施工队伍', '施工人数', '当日打眼数量', '累计打眼数量', '当日立管串数', '累计立管串数', '当日置换串数', '累计置换串数', '当日实际完成量', '累计实际完成量', '当日PMS系统录入量', '累计PMS系统录入量']
-    if multi_header:
-        df.columns = [col[0].replace('\n', '') if 'Unnamed' in col[1] else col[1]+col[0] for col in df.columns.values]
-    else:
-        df.columns = [col.replace('\n', '') for col in df.columns.values]
-    df = df.dropna(subset=['施工人数', '当日打眼数量', '当日立管串数', '当日实际完成量'])
-    df = df.astype({'施工人数': 'int', '当日打眼数量': 'int', '累计打眼数量': 'int', '当日立管串数': 'int', '累计立管串数': 'int', '当日置换串数': 'int', '累计置换串数': 'int'})
-    df = df.set_index('开片小区')
-    # print(df.index)
-    return df
 
 def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, y24data_df:pd.DataFrame, date:str):
     global TODAY_DATE
+    global INTERVAL_DAYS
     previous_situation_text = str()
     current_situation_text = str()
 
@@ -277,9 +236,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         DEFAULT_FILE_PATH = sys.argv[1]
     # interval_days = input("请输入间隔天数（默认{}天）：".format(INTERVAL_DAYS))
-    interval_days = 1
-    if interval_days:
-        INTERVAL_DAYS = int(interval_days)
+    # if interval_days:
+    #     INTERVAL_DAYS = int(interval_days)
         
     # 获取需要生成文本的日期
     try:
@@ -305,7 +263,9 @@ if __name__ == "__main__":
         try:
             current_day_data, previous_day_data, y24_day_data = load_specific_day_data(datetime.strptime(day, r"%m月%d日"))
             get_format_text(current_day_data, previous_day_data, y24_day_data, day)
-        except Exception as e:
+        except ValueError:
             print("没有找到{}工作表".format(day))
-            print(e.with_traceback())
+            continue
+        except Exception:
+            traceback.print_exc()
             continue
