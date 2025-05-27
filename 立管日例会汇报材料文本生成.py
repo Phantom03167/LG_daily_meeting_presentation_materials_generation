@@ -265,7 +265,5 @@ if __name__ == "__main__":
             get_format_text(current_day_data, previous_day_data, y24_day_data, day)
         except ValueError:
             print("没有找到{}工作表".format(day))
-            continue
         except Exception:
             traceback.print_exc()
-            continue
