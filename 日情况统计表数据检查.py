@@ -12,7 +12,7 @@ def check_data(current_day_data: pd.DataFrame, previous_day_data: pd.DataFrame) 
     current_day_data.replace(pd.NA, '', inplace=True)
     previous_day_data.replace(pd.NA, '', inplace=True)
     
-    for crow in current_day_data.iterrows():
+    for crow in current_day_data[~current_day_data.index.isin(("小计", "合计", "总计"))].iterrows():
         crow = crow[1]
         row_name = crow.name
         manager  = crow['管理单位']
@@ -49,23 +49,22 @@ def check_data(current_day_data: pd.DataFrame, previous_day_data: pd.DataFrame) 
             elif cday_volume != crow[item]:
                 checked_results[row_name].append(f"{item}与表中数据不符")
                 
-        if row_name[:2] not in ("小计", "合计", "总计"):
-            # 检查数据逻辑错误
-            if crow["当日立管串数"] != 0 and crow["当日实际完成量"] == 0:
-                checked_results[row_name].append("有立管但当日完成量为0")
-            if crow["累计立管串数"] != 0 and crow["累计打眼数量"] == 0:
-                checked_results[row_name].append("有立管但累计打眼数为0")
-            # if crow["累计置换串数"] != 0 and crow["累计立管串数"] == 0:
-            #     checked_results[row_name].append("有置换串但累计立管为0")
-            if crow["当日打眼数量"] == 0 and crow["当日立管串数"] == 0 and crow["当日实际完成量"] == 0 and crow["当日置换串数"] == 0 and crow["施工人数"] != 0:
-                checked_results[row_name].append("无工作量但施工人数不为0")
-            if (crow["当日打眼数量"] != 0 or crow["当日立管串数"] != 0 or crow["当日实际完成量"] != 0 or crow["当日置换串数"] != 0) and crow["施工人数"] == 0:
-                checked_results[row_name].append("有工作量但施工人数为0")
-            
-            # 检查施工状态
-            if (crow["施工人数"] == 0 and crow["施工状态"] not in ("停工", "待置换", "完工")) or \
-            (crow["施工人数"] != 0 and crow["施工状态"] not in ("在施")):
-                checked_results[row_name].append("施工状态错误")
+        # 检查数据逻辑错误
+        if crow["当日立管串数"] != 0 and crow["当日实际完成量"] == 0:
+            checked_results[row_name].append("有立管但当日完成量为0")
+        if crow["累计立管串数"] != 0 and crow["累计打眼数量"] == 0:
+            checked_results[row_name].append("有立管但累计打眼数为0")
+        # if crow["累计置换串数"] != 0 and crow["累计立管串数"] == 0:
+        #     checked_results[row_name].append("有置换串但累计立管为0")
+        if crow["当日打眼数量"] == 0 and crow["当日立管串数"] == 0 and crow["当日实际完成量"] == 0 and crow["当日置换串数"] == 0 and crow["施工人数"] != 0:
+            checked_results[row_name].append("无工作量但施工人数不为0")
+        if (crow["当日打眼数量"] != 0 or crow["当日立管串数"] != 0 or crow["当日实际完成量"] != 0 or crow["当日置换串数"] != 0) and crow["施工人数"] == 0:
+            checked_results[row_name].append("有工作量但施工人数为0")
+        
+        # 检查施工状态
+        if (crow["施工人数"] == 0 and crow["施工状态"] not in ("停工", "待置换", "完工")) or \
+        (crow["施工人数"] != 0 and crow["施工状态"] not in ("在施")):
+            checked_results[row_name].append("施工状态错误")
         
     # 输出检查结果
     for name, results in checked_results.items():
