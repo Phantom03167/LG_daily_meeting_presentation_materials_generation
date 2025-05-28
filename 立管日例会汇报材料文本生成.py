@@ -188,23 +188,23 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, y24data_df:pd.
         if not y24data_df.loc['合计'].当日置换串数.sum() == 0:
             replacement_situation_text += "其中，"
             # 按小区统计
-            for row in y24data_df[(y24data_df['监理单位'].notnull()) & (y24data_df['累计置换串数'] > 0)].itertuples():
-                if not row.当日置换串数:
-                    continue
-                replacement_situation_text += (
-                    "{}".format(row.Index) +
-                    "置换{}串".format(row.当日置换串数) +
-                    "，"
-                )
-            # 按施工队伍统计
-            # for row in y24data_df[(y24data_df['施工队伍'].notnull())].loc["小计"].itertuples():
+            # for row in y24data_df[(y24data_df['监理单位'].notnull()) & (y24data_df['累计置换串数'] > 0)].itertuples():
             #     if not row.当日置换串数:
             #         continue
             #     replacement_situation_text += (
-            #         "{}".format(row.施工队伍 if len(row.施工队伍) >= 4 else row.施工队伍 + '公司') +
+            #         "{}".format(row.Index) +
             #         "置换{}串".format(row.当日置换串数) +
             #         "，"
             #     )
+            # 按施工队伍统计
+            for row in y24data_df[(y24data_df['施工队伍'].notnull())].loc["小计"].itertuples():
+                if not row.当日置换串数:
+                    continue
+                replacement_situation_text += (
+                    "{}".format(row.施工队伍 if len(row.施工队伍) >= 4 else row.施工队伍 + '公司') +
+                    "置换{}串".format(row.当日置换串数) +
+                    "，"
+                )
         replacement_situation_text = replacement_situation_text[:-1] + "。\n"
     
     if not cdate_df.empty:
@@ -217,27 +217,27 @@ def get_format_text(cdate_df:pd.DataFrame, pdate_df:pd.DataFrame, y24data_df:pd.
         if cdate_df.loc['总计'].累计置换串数 - pdate_df.loc['总计'].累计置换串数 != 0:
             replacement_situation_text += "其中，"
             # 按小区统计
-            for crow in cdate_df[(cdate_df['监理单位'].notnull()) & (cdate_df['累计置换串数'] > 0)].itertuples():
-                prow = pdate_df.loc[crow.Index]
-                replacement_count = crow.累计置换串数 - prow.累计置换串数
-                if not replacement_count:
-                    continue
-                replacement_situation_text += (
-                    "{}".format(crow.Index) +
-                    "置换{}串".format(replacement_count) +
-                    "，"
-                )
-            # 按施工队伍统计
-            # for crow in cdate_df[(cdate_df['施工队伍'].notnull())].loc['小计'].itertuples():
-            #     prow = pdate_df.loc['小计'].query('施工队伍 == @crow.施工队伍').iloc[0]
+            # for crow in cdate_df[(cdate_df['监理单位'].notnull()) & (cdate_df['累计置换串数'] > 0)].itertuples():
+            #     prow = pdate_df.loc[crow.Index]
             #     replacement_count = crow.累计置换串数 - prow.累计置换串数
             #     if not replacement_count:
             #         continue
             #     replacement_situation_text += (
-            #         "{}".format(crow.施工队伍 if len(crow.施工队伍) >= 4 else crow.施工队伍 + '公司') +
+            #         "{}".format(crow.Index) +
             #         "置换{}串".format(replacement_count) +
             #         "，"
             #     )
+            # 按施工队伍统计
+            for crow in cdate_df[(cdate_df['施工队伍'].notnull())].loc['小计'].itertuples():
+                prow = pdate_df.loc['小计'].query('施工队伍 == @crow.施工队伍').iloc[0]
+                replacement_count = crow.累计置换串数 - prow.累计置换串数
+                if not replacement_count:
+                    continue
+                replacement_situation_text += (
+                    "{}".format(crow.施工队伍 if len(crow.施工队伍) >= 4 else crow.施工队伍 + '公司') +
+                    "置换{}串".format(replacement_count) +
+                    "，"
+                )
         replacement_situation_text = replacement_situation_text[:-1] + "。\n"
     
     # 输出文本
