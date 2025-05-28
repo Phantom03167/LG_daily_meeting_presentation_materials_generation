@@ -45,7 +45,6 @@ def dateframe_preprocessing(df:pd.DataFrame, multi_header: bool = False) -> pd.D
         df.columns = [col.replace('\n', '') for col in df.columns.values]
     df = df.dropna(subset=['开片小区', '施工人数', '当日打眼数量', '当日立管串数', '当日实际完成量'])
     df = df.astype({'施工人数': 'int', '当日打眼数量': 'int', '累计打眼数量': 'int', '当日立管串数': 'int', '累计立管串数': 'int', '当日置换串数': 'int', '累计置换串数': 'int'})
-    df = df.round(4)
     df = df.set_index('开片小区')
     # print(df.index)
     return df

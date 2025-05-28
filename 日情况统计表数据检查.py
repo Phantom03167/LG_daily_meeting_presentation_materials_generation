@@ -40,7 +40,7 @@ def check_data(current_day_data: pd.DataFrame, previous_day_data: pd.DataFrame) 
                 checked_results[row_name].append(f"{item}为0，累计数据错误")
                 
             # 检查当日完成量
-            cday_volume = (crow[item] - prow[item]).round(2)
+            cday_volume = (crow[item] - prow[item]).round(4)
             item = item.replace('累计', '当日')
             if cday_volume < 0:
                 checked_results[row_name].append(f"{item}小于0，累计数据错误")
@@ -96,7 +96,6 @@ if __name__ == "__main__":
         print(day)
         try:
             current_day_data, previous_day_data, _ = load_specific_day_data(datetime.strptime(day, r"%m月%d日"), False)
-            check_data(current_day_data, previous_day_data)
         except ValueError:
             print("没有找到{}工作表".format(day))
             # traceback.print_exc()
@@ -105,4 +104,7 @@ if __name__ == "__main__":
             traceback.print_exc()
             print("检查{}数据时发生错误".format(day))
             exit(2)
+            
+        check_data(current_day_data, previous_day_data)
         print("=" * 100)
+
